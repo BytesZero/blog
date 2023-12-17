@@ -1,0 +1,206 @@
+# 🌐 Ngnix 
+
+> Nginx 是一个高性能的Web服务和反向代理服务，它的特性是高并发、内存占用少、配置简单等等。
+
+## 安装
+
+``` bash
+yum install nginx
+```
+
+## 常用命令
+
+``` bash title="启动"
+systemctl start nginx
+#nginx
+```
+
+``` bash title="停止"
+systemctl stop nginx
+#nginx -s stop
+```
+
+``` bash title="重启"
+systemctl restart nginx
+```
+
+``` bash title="重载"
+systemctl reload nginx
+#nginx -s reload
+```
+
+``` bash title="测试配置"
+nginx -t
+nginx -T
+# 大 T 会列出所有配置信息，包括 include 的配置文件
+```
+
+``` bash title="查看状态"
+systemctl status nginx
+```
+
+``` bash title="查看进程状态"
+ps aux|grep nginx
+```
+
+``` bash title="查看版本"
+nginx -v
+nginx -V
+# 大 V 会列出所有配置信息，包括编译参数
+```
+
+``` bash title="查看帮助"
+nginx -h
+```
+
+``` bash title="查看日志"
+tail -f /var/log/nginx/error.log
+tail -f /var/log/nginx/access.log
+```
+
+## 配置
+
+### 搭建网站
+
+- 配置网站
+
+``` nginx title="/etc/nginx/conf.d/ssl.byteszero.cn.conf"
+server {
+    # BytesZero 博客网站
+    location / {
+        root /root/pro/blog/site/;
+        index index.html;
+    }
+}
+```
+
+- 解决 403 问题
+
+``` bash title="etc/nginx/nginx.conf"
+# 查看 worker 进程用户
+ps aux|grep nginx
+# 修改 nginx.conf 中的 user
+user root;
+# 修改网站目录权限
+chown -R root:root /root/pro/blog/site/
+# 重启服务
+systemctl restart nginx
+# 【❗️】验证一下 worker 进程用户
+ps aux|grep nginx
+```
+
+
+### 配置证书
+
+- 网站证书配置
+
+``` nginx title="/etc/nginx/conf.d/ssl.byteszero.cn.conf"
+server {
+    ## 必选SSL配置
+    listen 443 ssl; # 开启443端口监听
+    server_name ssl.byteszero.cn; # 被监听的域名
+    ssl_certificate /etc/nginx/cert/ssl.byteszero.cn.pem; # 证书文件路径
+    ssl_certificate_key /etc/nginx/cert/ssl.byteszero.cn.key; # 私钥文件路径
+}
+```
+- http 自动重定向到 https
+
+``` nginx title="/etc/nginx/nginx.conf"
+server {
+    listen       80;
+    listen       [::]:80;
+    # HTTP到HTTPS的重定向
+    return 301 https://$host$request_uri;
+}
+```
+
+### 反向代理
+
+``` nginx title="/etc/nginx/conf.d/ssl.byteszero.cn.conf"
+# api 接口代理
+server {
+    location /api/ {
+        # 为了去掉 /api 前缀
+        rewrite ^/api(/.*)$ $1 break; 
+        # 代理到本地 8081 端口服务上
+        proxy_pass http://localhost:8081;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+### 负载均衡
+
+``` nginx title="/etc/nginx/conf.d/ssl.byteszero.cn.conf"
+upstream backend_servers {
+    server backend_server1 weight=3;
+    server backend_server2 weight=2;
+    server backend_server3;
+    # 添加更多的后端服务器并设置权重
+}
+
+server {
+    location / {
+        proxy_pass http://backend_servers;
+    }
+}
+```
+
+### 其他配置
+
+- 配置 Worker 数量
+
+``` nginx title="/etc/nginx/nginx.conf"
+worker_processes 4;
+# 一般设置 CPU 核数的 1～4 倍
+```
+
+- 配置 Worker 连接数
+
+``` nginx title="/etc/nginx/nginx.conf"
+events {
+    worker_connections 1024;
+}
+# 一般设置为 1024，可通过如下命令查看每个 CPU 核心能处理的最大连接数，设定即可
+cat /proc/sys/net/core/somaxconn
+```
+
+- 查看服务状态
+
+``` bash
+systemctl status nginx
+```
+
+``` bash
+● nginx.service - The nginx HTTP and reverse proxy server
+   Loaded: loaded (/usr/lib/systemd/system/nginx.service; enabled; vendor preset: enabled)
+   Active: active (running) since Sun 2023-12-17 16:00:22 CST; 16min ago
+  Process: 964949 ExecReload=/bin/kill -s HUP $MAINPID (code=exited, status=0/SUCCESS)
+  Process: 965138 ExecStart=/usr/sbin/nginx (code=exited, status=0/SUCCESS)
+  Process: 965136 ExecStartPre=/usr/sbin/nginx -t (code=exited, status=0/SUCCESS)
+  Process: 965134 ExecStartPre=/usr/bin/rm -f /run/nginx.pid (code=exited, status=0/SUCCESS)
+ Main PID: 965139 (nginx)
+    Tasks: 5 (limit: 11849)
+   Memory: 3.1M
+   CGroup: /system.slice/nginx.service
+           ├─965139 nginx: master process /usr/sbin/nginx
+           ├─965140 nginx: worker process
+           ├─965141 nginx: worker process
+           ├─965142 nginx: worker process
+           └─965143 nginx: worker process
+```
+:::tip 如上可以看出
+
+- 服务已经启动
+- 运行了 16 分钟
+- 主进程 ID 为 965139
+- 工作进程数为 5
+- 内存占用 3.1M
+- 1 master 进程
+- 4 个 worker 进程
+
+:::
+
