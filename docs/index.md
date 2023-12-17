@@ -4,7 +4,7 @@ pageType: home
 hero:
   name: 红尘赐我两滴墨
   text: 不敢直书亏为人
-  # tagline: 个人的观点是片面的，愿我们有一丝共鸣
+  # tagline: Zero
   actions:
     - theme: alt
       text: 聊技术
