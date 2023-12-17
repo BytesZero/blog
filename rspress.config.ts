@@ -22,11 +22,4 @@ export default defineConfig({
     prevPageText: '上一篇',
     nextPageText: '下一篇',
   },
-  builderConfig: {
-    output: {
-      distPath: {
-        root: 'site',
-      },
-    },
-  },
 });
