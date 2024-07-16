@@ -5,11 +5,7 @@ export default defineConfig({
   root: path.join(__dirname, 'docs'),
   title: 'BytesZero',
   description: '红尘赐我两滴墨，不敢直书亏为人',
-  icon: '/rspress-icon.png',
-  // logo: {
-  //   light: '/rspress-light-logo.png',
-  //   dark: '/rspress-dark-logo.png',
-  // },
+  icon: '/favicon.ico',
   themeConfig: {
     search: false,
     socialLinks: [
