@@ -13,7 +13,7 @@ export default defineConfig({
       { icon: 'juejin', mode: 'link', content: 'https://juejin.cn/user/764915820276439' },
     ],
     footer: {
-      message: '© BytesZero 陕ICP备2023020053号-1',
+      message: '<p><strong>© BytesZero <a href="https://beian.miit.gov.cn/" target="_blank">陕ICP备2023020053号-1</a></strong></p>',
     },
     prevPageText: '上一篇',
     nextPageText: '下一篇',
